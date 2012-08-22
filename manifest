@@ -54,4 +54,4 @@ requiredPatchURLs=
 serializedModel=
 taskType=Uncategorized
 userid=nazaire@broadinstitute.org
-version=
+version=Modified to allow column ranges with no end position to be specified
