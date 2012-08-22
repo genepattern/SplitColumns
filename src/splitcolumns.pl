@@ -22,6 +22,21 @@ $extension = ($inputFile =~ m/([^.]+)$/)[0];
 
 @selected_columns;
 
+# find out number of columns in the input file
+open FILE, "<", $inputFile or die $!;
+my $line = <FILE>;
+chomp $line;
+@line_items = split('\t', $line);
+$num_col_items = @line_items;
+
+if($num_col_items < 1)
+{
+    print STDERR "An error occurred while obtaining the number of columns in the input file. Please check that the input file is tab delimited.";
+    exit(1);
+}
+close(FILE);
+
+
 if ($columns ne "")
 {
     @column_split = split(',', $columns);
@@ -34,35 +49,49 @@ if ($columns ne "")
             @col_range = split('-', $col);
 
             #check that the range found is valid, only contains a start and end value
-            $col1_range = @col_range;
-            if($col1_range != 2)
+            $num_col_range = @col_range;
+            if($num_col_range < 1)
             {
                 print STDERR "\nAn error occurred while parsing the column(s) specified: ".$columns;
                 exit(1);
             }
 
+            #user only specified start, in this we case we output all columns after start
+            if($num_col_range == 1)
+            {
+                $end = $num_col_items;
+            }
+            else
+            {
+                $end = $col_range[1];
+            }
+
             $start = $col_range[0];
-            $end = $col_range[1];
             if($start > $end)
             {
-                $start = $col_range[1];
-                $end = $col_range[0];
+                $temp = $start;
+                $start = $end;
+                $end = $temp;
             }
 
             @col_num_range = ($start .. $end);
             @selected_columns = (@selected_columns, @col_num_range);
         }
-  	else
-  	{
-	    push(@selected_columns, trim($col));
-  	}
+  	    else
+  	    {
+	        push(@selected_columns, trim($col));
+  	    }
     }
-    print "The selected columns were: @selected_columns\n";
 }
 else
 {
     print "All columns were selected\n";
+
+    @selected_columns = (1 .. $num_col_items);
 }
+
+$num_selected_columns = @selected_column;
+print "\nThe selected columns were: @selected_columns\n";
 
 if(cutCommandExists() eq "false")
 {
@@ -86,7 +115,6 @@ sub cutCommandExists
 
     open(STDERR, ">&CPERR") || die "Can't restore stderr: $!";
 
-    print "cut exit code: $cut_exec_result";
     #check exit code
     if($cut_exec_result != -1)
     {
@@ -100,46 +128,17 @@ sub cutCommandExists
 }
 sub runCutCommand
 {
-    $num_selected_columns = @selected_column;
-
-    # find out number of columns in the input file
-    open FILE, "<", $inputFile or die $!;
-    my $line = <FILE>;
-    chomp $line;
-    @line_items = split('\t', $line);
-    $num_line_items = @line_items;
-    
-    if($num_line_items < 1)
+    foreach $scol (@selected_columns)
     {
-	print STDERR "An error occurred while obtaining the number of columns in the input file. Please check t\
-hat the input file is tab delimited.";
-	exit(1);
-    }
-
-    close(FILE);
-    if(!(defined @selected_columns || $num_selected_columns > 0))
-    {
-	$num_line_items = @line_items;
-        if($num_line_items < 1)
+        if($scol > $num_col_items)
         {
-            print STDERR "An error occurred while obtaining the number of columns in the input file. Please check that the input file is tab delimited.";
+            print STDERR "$scol is greater than number of columns in input file $num_col_items";
             exit(1);
         }
 
-        @selected_columns = (1 .. $num_line_items);
-    }
+        $outputFile = $outputPrefix."_".$scol.".".$extension;
 
-    foreach $scol (@selected_columns)
-    {
-	if($scol > $num_line_items)
-	{
-	    print STDERR "$scol is greater than number of columns in input file $num_line_items";
-	    exit(1);
-	}
-
-	$outputFile = $outputPrefix."_".$scol.".".$extension;
-
-	system("cut -f$scol $inputFile > $outputFile");
+        system("cut -f$scol $inputFile > $outputFile");
     }
 }
 
@@ -155,33 +154,13 @@ sub runSplitDataPerl
         chomp $line;
         @line_items = split('\t', $line);
 
-	if($count == 0)
-	{
-	    $num_line_items = @line_items;
-	    if($num_line_items < 1)
-            {
-                print STDERR "An error occurred while obtaining the number of columns in the input file. Please check that the input file is tab delimited.";
-                exit(1);
-            }
-	    $count = $count +1;
-	}
-
-        if(!(defined @selected_columns || $num_selected_columns > 0))
-        {
-            @selected_columns = (1 .. $num_line_items);
-
-            $num_selected_columns = @selected_columns;
-
-            print "\nSelected columns: @selected_columns\n";
-        }
-
         foreach $scol (@selected_columns)
         {
-	    if($scol > $num_line_items)
-	    {
-		print STDERR "$scol is greater than number of columns in input file $num_line_items";
-		exit(1);
-	    }
+	        if($scol > $num_col_items)
+	        {
+		        print STDERR "$scol is greater than number of columns in input file $num_col_items";
+		        exit(1);
+	        }
 
             $outputFile = $outputPrefix."_".$scol.".".$extension;
             open OFILE, ">>", $outputFile or die $!;
