@@ -4,7 +4,7 @@ use Getopt::Long;
 my $result = GetOptions ("i:s" => \$inputFile,
                          "o:s"   => \$outputPrefix,
                          "c:s"   => \$columns,
-                         "s:s"   => \$numskip
+                         "a:s"   => \$additionalColumns
                          );
 
 #check required input parameters
@@ -19,8 +19,6 @@ if ($outputPrefix eq "") {
 }
 
 $extension = ($inputFile =~ m/([^.]+)$/)[0];
-
-@selected_columns;
 
 # find out number of columns in the input file
 open FILE, "<", $inputFile or die $!;
@@ -39,59 +37,25 @@ close(FILE);
 
 if ($columns ne "")
 {
-    @column_split = split(',', $columns);
-
-    #loop through comma separated column string
-    foreach $col (@column_split)
-    {
-        if(rindex($col, "-") != -1)
-        {
-            @col_range = split('-', $col);
-
-            #check that the range found is valid, only contains a start and end value
-            $num_col_range = @col_range;
-            if($num_col_range < 1)
-            {
-                print STDERR "\nAn error occurred while parsing the column(s) specified: ".$columns;
-                exit(1);
-            }
-
-            #user only specified start, in this we case we output all columns after start
-            if($num_col_range == 1)
-            {
-                $end = $num_col_items;
-            }
-            else
-            {
-                $end = $col_range[1];
-            }
-
-            $start = $col_range[0];
-            if($start > $end)
-            {
-                $temp = $start;
-                $start = $end;
-                $end = $temp;
-            }
-
-            @col_num_range = ($start .. $end);
-            @selected_columns = (@selected_columns, @col_num_range);
-        }
-  	    else
-  	    {
-	        push(@selected_columns, trim($col));
-  	    }
-    }
+    @selected_columns = parseColumnString($columns);
 }
 else
 {
-    print "All columns were selected\n";
-
     @selected_columns = (1 .. $num_col_items);
 }
 
 $num_selected_columns = @selected_column;
-print "\nThe selected columns were: @selected_columns\n";
+print "\nThe selected split columns were: @selected_columns\n";
+
+
+$num_additional_cols = 0;
+if ($additionalColumns ne "")
+{
+    @additional_columns = parseColumnString($additionalColumns);
+    $num_additional_cols = @additional_columns;
+
+    print "\nThe selected additional columns to include were: @additional_columns\n";
+}
 
 if(cutCommandExists() eq "false")
 {
@@ -138,7 +102,16 @@ sub runCutCommand
 
         $outputFile = $outputPrefix."_".$scol.".".$extension;
 
-        system("cut -f$scol $inputFile > $outputFile");
+        $cutString = $scol;
+        #if additional columns should be included then do this now
+        if($num_additional_cols > 0)
+        {
+            @cut_columns = @additional_columns;
+            push(@cut_columns, $scol);
+            @cut_columns = sort(@cut_columns);
+            $cutString = join(",", @cut_columns);
+        }
+        system("cut -f$cutString $inputFile > $outputFile");
     }
 }
 
@@ -164,7 +137,22 @@ sub runSplitDataPerl
 
             $outputFile = $outputPrefix."_".$scol.".".$extension;
             open OFILE, ">>", $outputFile or die $!;
-            print OFILE $line_items[$scol-1]."\n";
+
+            #if additional columns should be included then do this now
+            if($num_additional_cols > 0)
+            {
+                @cut_columns = @additional_columns;
+                push(@cut_columns, $scol);
+                @cut_columns = sort(@cut_columns);
+                foreach $dcol (@cut_columns)
+                {
+                    print OFILE $line_items[$dcol-1]."\n";
+                }
+            }
+            else
+            {
+                print OFILE $line_items[$scol-1]."\n";
+            }
             close (OFILE);
         }
     }
@@ -172,6 +160,59 @@ sub runSplitDataPerl
     close(FILE);
 }
 
+sub parseColumnString
+{
+    $colString = shift;
+    my @columnsArray;
+    if ($colString ne "")
+    {
+        @column_split = split(',', $colString);
+
+        #loop through comma separated column string
+        foreach $col (@column_split)
+        {
+            if(rindex($col, "-") != -1)
+            {
+                @col_range = split('-', $col);
+
+                #check that the range found is valid, only contains a start and end value
+                $num_col_range = @col_range;
+                if($num_col_range < 1)
+                {
+                    print STDERR "\nAn error occurred while parsing the column(s) specified: ".$colString;
+                    exit(1);
+                }
+
+                #user only specified start, in this we case we output all columns after start
+                if($num_col_range == 1)
+                {
+                    $end = $num_col_items;
+                }
+                else
+                {
+                    $end = $col_range[1];
+                }
+
+                $start = $col_range[0];
+                if($start > $end)
+                {
+                    $temp = $start;
+                    $start = $end;
+                    $end = $temp;
+                }
+
+                @col_num_range = ($start .. $end);
+                @columnsArray = (@columnsArray, @col_num_range);
+            }
+      	    else
+      	    {
+    	        push(@columnsArray, trim($col));
+      	    }
+        }
+    }
+
+    return @columnsArray;
+}
 # Perl trim function to remove whitespace from the start and end of the string
 sub trim($)
 {
