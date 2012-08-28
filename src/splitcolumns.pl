@@ -18,8 +18,6 @@ if ($outputPrefix eq "") {
 	exit(1);
 }
 
-$extension = ($inputFile =~ m/([^.]+)$/)[0];
-
 # find out number of columns in the input file
 open FILE, "<", $inputFile or die $!;
 my $line = <FILE>;
@@ -100,7 +98,7 @@ sub runCutCommand
             exit(1);
         }
 
-        $outputFile = $outputPrefix."_".$scol.".".$extension;
+        $outputFile = $outputPrefix."_".$scol.".splitcol.txt";
 
         $cutString = $scol;
         #if additional columns should be included then do this now
@@ -135,7 +133,7 @@ sub runSplitDataPerl
 		        exit(1);
 	        }
 
-            $outputFile = $outputPrefix."_".$scol.".".$extension;
+            $outputFile = $outputPrefix."_".$scol.".splitcol.txt";
             open OFILE, ">>", $outputFile or die $!;
 
             #if additional columns should be included then do this now
