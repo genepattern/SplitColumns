@@ -70,4 +70,4 @@ requiredPatchURLs=
 serializedModel=
 taskType=Uncategorized
 userid=nazaire@broadinstitute.org
-version=Added additional columns parameter to specify columns to include in all output files
+version=Changed extension of the output files
