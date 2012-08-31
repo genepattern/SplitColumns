@@ -1,5 +1,3 @@
-#SplitFileMatrix
-#Wed Aug 22 08:24:03 EDT 2012
 JVMLevel=
 LSID=urn\:lsid\:9090.gpdev.gpint01\:genepatternmodules\:741\:4
 author=
@@ -14,7 +12,7 @@ p1_MODE=IN
 p1_TYPE=FILE
 p1_default_value=
 p1_description=A tab delimited file
-p1_fileFormat=cn;seg;seg.txt;xcn
+p1_fileFormat=cn;seg;seg.txt;xcn;txt
 p1_flag=-i 
 p1_name=input.file
 p1_optional=
