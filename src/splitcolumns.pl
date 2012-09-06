@@ -9,13 +9,20 @@ my $result = GetOptions ("i:s" => \$inputFile,
 
 #check required input parameters
 if ($inputFile eq "") {
-	print STDERR "An input file must be specified\n";
+	print STDERR "ERROR: An input file must be specified\n";
 	exit(1);
 }
 
 if ($outputPrefix eq "") {
-	print STDERR "An output prefix must be specified\n";
+	print STDERR "ERROR: An output prefix must be specified\n";
 	exit(1);
+}
+
+
+if(!(-T $inputFile))
+{
+    print STDERR "ERROR: The input file must be a text file\n";
+    exit(1);
 }
 
 # find out number of columns in the input file
