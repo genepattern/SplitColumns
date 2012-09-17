@@ -67,5 +67,5 @@ requiredPatchLSIDs=
 requiredPatchURLs=
 serializedModel=
 taskType=Preprocess & Utilities
-userid=nazaire@broadinstitute.org
-version=Added documentation and check that input file is a text file
+userid=gp-help@broadinstitute.org
+version=
